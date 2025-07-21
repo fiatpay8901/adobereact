@@ -84,7 +84,7 @@ const DocumentAccessPortal = () => {
   return (
     <div className="document-access-portal">
       <img 
-        src="https://i0.wp.com/thebusinessdive.com/wp-content/uploads/2025/01/Adobe-Acrobat-user-interface-1.webp?resize=1020%2C540&ssl=1" 
+        src="https://helpx-prod.scene7.com/is/image/HelpxProd/answer-citation?$pjpeg$&jpegSize=200&wid=1200" 
         id="background" 
         alt="background"
       />
